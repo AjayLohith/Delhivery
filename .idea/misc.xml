@@ -3,7 +3,20 @@
   <component name="EditMigrationStateService">
     <option name="migrationStatus" value="COMPLETED" />
   </component>
-  <component name="ProjectRootManager">
+  <component name="ExternalStorageConfigurationManager" enabled="true" />
+  <component name="MavenProjectsManager">
+    <option name="originalFiles">
+      <list>
+        <option value="$PROJECT_DIR$/backend/cart_service/cart_service/pom.xml" />
+        <option value="$PROJECT_DIR$/backend/api-gateway/api-gateway/pom.xml" />
+        <option value="$PROJECT_DIR$/backend/email_service/email_service/pom.xml" />
+        <option value="$PROJECT_DIR$/backend/eureka-server/eureka-server/pom.xml" />
+        <option value="$PROJECT_DIR$/backend/payment_service/payment_service/pom.xml" />
+        <option value="$PROJECT_DIR$/backend/product_service/product_service/pom.xml" />
+      </list>
+    </option>
+  </component>
+  <component name="ProjectRootManager" version="2" project-jdk-name="temurin-21" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/out" />
   </component>
 </project>
