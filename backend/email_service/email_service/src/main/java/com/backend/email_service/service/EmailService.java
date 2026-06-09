@@ -13,10 +13,11 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class EmailService {
+public class
+EmailService {
     private final JavaMailSender mailSender;
 
-    @Value("${EMAIL_HOST_BREVO}")
+    @Value("${EMAIL_SENDER_BREVO}")
     private String fromEmail;
 
     public void sendOrderConfirmation(String toEmail,
