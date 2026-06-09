@@ -16,7 +16,7 @@ import java.util.Map;
 public class EmailService {
     private final JavaMailSender mailSender;
 
-    @Value("${email.from}")
+    @Value("${EMAIL_HOST_BREVO}")
     private String fromEmail;
 
     public void sendOrderConfirmation(String toEmail,
