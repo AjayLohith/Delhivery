@@ -6,8 +6,16 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="api-gateway" />
         <module name="eureka-server" />
+      </profile>
+      <profile name="Annotation profile for api-gateway" enabled="true">
+        <sourceOutputDir name="../generated-sources/annotations" />
+        <sourceTestOutputDir name="../generated-test-sources/test-annotations" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/springframework/boot/spring-boot-configuration-processor/3.5.14/spring-boot-configuration-processor-3.5.14.jar" />
+        </processorPath>
+        <module name="api-gateway.main" />
+        <module name="api-gateway.test" />
       </profile>
       <profile name="Annotation profile for product_service" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
@@ -26,6 +34,8 @@
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="api-gateway" options="-parameters" />
+      <module name="api-gateway.main" options="-parameters" />
+      <module name="api-gateway.test" options="-parameters" />
       <module name="cart_service" options="-parameters" />
       <module name="email_service" options="-parameters" />
       <module name="eureka-server" options="-parameters" />
