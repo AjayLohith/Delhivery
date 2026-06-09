@@ -7,7 +7,16 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="api-gateway" />
-        <module name="eureka-server" />
+      </profile>
+      <profile name="Annotation profile for email_service" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
+        </processorPath>
+        <module name="email_service" />
       </profile>
       <profile name="Annotation profile for product_service" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
@@ -16,16 +25,20 @@
         <processorPath useClasspath="false">
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
         </processorPath>
-        <module name="cart_service" />
-        <module name="payment_service" />
-        <module name="email_service" />
-        <module name="product_service" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="api_gateway" target="21" />
+      <module name="cart_service" target="21" />
+      <module name="eureka-server" target="21" />
+      <module name="payment_service" target="21" />
+      <module name="product_service" target="21" />
+    </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="api-gateway" options="-parameters" />
+      <module name="api_gateway" options="-parameters" />
       <module name="cart_service" options="-parameters" />
       <module name="email_service" options="-parameters" />
       <module name="eureka-server" options="-parameters" />
