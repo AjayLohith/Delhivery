@@ -67,9 +67,9 @@ public class ProductController {
     }
 
 
-    @PutMapping("/{id}/reduce-stock")
-    public ResponseEntity<Boolean> reduceStock(@PathVariable Long id,
-                                               @RequestParam int quantity) {
-        return ResponseEntity.ok(productService.reduceStock(id, quantity));
+    @PutMapping("/{productId}/decrement-stock")
+    public ResponseEntity<Boolean> reduceStock(@PathVariable Long productId,
+                                               @RequestParam Integer quantity) {
+        return ResponseEntity.ok(productService.reduceStock(productId, quantity));
     }
 }

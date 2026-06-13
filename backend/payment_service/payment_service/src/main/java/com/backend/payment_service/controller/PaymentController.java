@@ -2,7 +2,6 @@ package com.backend.payment_service.controller;
 
 import com.backend.payment_service.model.Payment;
 import com.backend.payment_service.service.PaymentService;
-import jakarta.ws.rs.Path;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +21,9 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.verifyPayment(razorpayOrderId,razorpayPaymentId));
     }
 
+//    public ResponseEntity<Payment>cashOnDelivery(){
+//        return ResponseEntity.ok(paymentService.paymentByCOD());
+//    }
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<Payment>>getPaymentByUser(@PathVariable String userId){
         return ResponseEntity.ok(paymentService.getPaymentByUser(userId));

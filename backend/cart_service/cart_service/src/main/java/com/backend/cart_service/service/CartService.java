@@ -1,13 +1,20 @@
 package com.backend.cart_service.service;
 
+import com.backend.cart_service.execption.CheckoutException;
 import com.backend.cart_service.kafka.OrderEventProducer;
 import com.backend.cart_service.model.CartItem;
 import com.backend.cart_service.model.OrderEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.ws.rs.Path;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.common.protocol.types.Field;
+import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +28,7 @@ public class CartService {
     private final RedisTemplate<String,Object>redisTemplate;
     private final OrderEventProducer orderEventProducer;
     private final ObjectMapper objectMapper;
+    private final ProductClient productClient;
 
     private String cartKey(String userId){
         return "cart:"+userId;
@@ -59,11 +67,34 @@ public class CartService {
         if(items.isEmpty()){
             return "Cart is empty nothing to checkout";
         }
+
+        for (CartItem item:items){
+            try {
+                Boolean success = productClient.decrementStock(
+                        item.getProductId(),
+                        item.getQuantity()
+                );
+                if (Boolean.FALSE.equals(success)) {
+                    throw new RuntimeException("Out of stock: " + item.getProductName());
+                }
+            }
+            catch (Exception e){
+                throw new CheckoutException(
+                        item.getProductName()+" is out of stock"
+                );
+            }
+        }
+
+
         double total=items.stream()
                 .mapToDouble(CartItem::getTotalPrice)
                 .sum();
         total=Math.round(total*100.0)/100.0;
-        String orderId="ORD-"+ UUID.randomUUID().toString().substring(0,8).toUpperCase();
+        String orderId=
+                "ORD-"+ UUID.randomUUID()
+                        .toString()
+                        .substring(0,8)
+                        .toUpperCase();
 
         OrderEvent event= OrderEvent.builder()
                 .orderId(orderId)
