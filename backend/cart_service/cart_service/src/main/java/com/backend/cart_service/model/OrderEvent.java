@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.util.List;
 
 @Data
@@ -24,6 +25,6 @@ public class OrderEvent implements Serializable {
     private String paymentMethod;      // "UPI_RAZORPAY" or "COD"
     private String couponCode;         // null if none
     private String status;             // "PLACED"
-    private String estimatedDelivery;
+    private LocalDate estimatedDelivery;
 }
 

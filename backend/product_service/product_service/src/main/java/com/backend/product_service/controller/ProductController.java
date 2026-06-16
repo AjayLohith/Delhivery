@@ -48,6 +48,7 @@ public class ProductController {
     }
 
 
+    @PostMapping
     public ResponseEntity<Product> createProduct(@Valid @RequestBody Product product) {
         return ResponseEntity.status(HttpStatus.CREATED).body(productService.createProduct(product));
     }

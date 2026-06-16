@@ -3,19 +3,15 @@ package com.backend.cart_service.service;
 import com.backend.cart_service.execption.CheckoutException;
 import com.backend.cart_service.kafka.OrderEventProducer;
 import com.backend.cart_service.model.CartItem;
+import com.backend.cart_service.model.CheckoutRequest;
 import com.backend.cart_service.model.OrderEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.ws.rs.Path;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.common.protocol.types.Field;
-import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -62,12 +58,25 @@ public class CartService {
     }
 
 
-    public String checkOut(String userId, String email) {
+    public String checkOut(String userId, CheckoutRequest req) {
+
         List<CartItem>items=getCart(userId);
         if(items.isEmpty()){
             return "Cart is empty nothing to checkout";
         }
 
+        String email=req.getEmail();
+        String paymentMethod= req.getPaymentMethod();
+        String coupounCode=req.getCouponCode();
+
+        if(email==null || email.isBlank()){
+            throw new CheckoutException("Email is required");
+        }
+        if(!"COD".equalsIgnoreCase(paymentMethod) && !"ONLINE".equalsIgnoreCase(paymentMethod)){
+            throw new CheckoutException("Payment should be COD or Online");
+        }
+
+        //Reduce stock
         for (CartItem item:items){
             try {
                 Boolean success = productClient.decrementStock(
@@ -79,17 +88,36 @@ public class CartService {
                 }
             }
             catch (Exception e){
+                log.error("Stock check failed for product {}", item.getProductId(), e);
+
                 throw new CheckoutException(
-                        item.getProductName()+" is out of stock"
+                        "Product Service Error: " + e.getMessage()
                 );
             }
         }
 
-
-        double total=items.stream()
+        double subTotal =items.stream()
                 .mapToDouble(CartItem::getTotalPrice)
                 .sum();
-        total=Math.round(total*100.0)/100.0;
+        subTotal =Math.round(subTotal *100.0)/100.0;
+
+        double discount=0;
+        if("WELCOME10".equalsIgnoreCase(coupounCode)){
+            discount= subTotal *0.10;
+        }
+
+        double codFee=0;
+        if("COD".equalsIgnoreCase(paymentMethod)){
+            codFee=49;
+        }
+
+        double finalTotal=subTotal-discount+codFee;
+        finalTotal=Math.round(finalTotal*100.0)/100.0;
+
+        LocalDate estimatedDelivery =LocalDate.now().plusDays(5);
+
+        String paymentStatus="COD".equalsIgnoreCase(paymentMethod)?"PENDING":"PAID";
+
         String orderId=
                 "ORD-"+ UUID.randomUUID()
                         .toString()
@@ -101,14 +129,40 @@ public class CartService {
                 .userId(userId)
                 .userEmail(email)
                 .items(items)
-                .totalAmount(total)
+                .subtotal(subTotal)
+                .discountAmount(discount)
+                .codFee(codFee)
+                .totalAmount(finalTotal)
+                .paymentMethod(paymentMethod)
+                .couponCode(coupounCode)
+                .paymentMethod(paymentStatus)
+                .estimatedDelivery(estimatedDelivery)
                 .status("PLACED")
                 .build();
 
         orderEventProducer.sendOrderEvent(event);
         clearCart(userId);
 
-        log.info("Checkout done OrderId:{},UserId:{}",orderId,userId);
-        return "Order Placed! OrderId: "+orderId+"|Total:Rs. "+total;
+        log.info("Checkout done OrderId:{},UserId:{},PaymentMethod:{}",
+                orderId,
+                userId,
+                paymentMethod);
+
+        return String.format(
+                """
+                Order Placed Successfully!
+                
+                Order ID: %s
+                Payment Method: %s
+                Payment Status: %s
+                Estimated Delivery: %s
+                Total Amount: Rs. %.2f
+                """,
+                orderId,
+                paymentMethod,
+                paymentStatus,
+                estimatedDelivery,
+                finalTotal
+        );
     }
 }

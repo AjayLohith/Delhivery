@@ -1,6 +1,7 @@
 package com.backend.cart_service.controller;
 
 import com.backend.cart_service.model.CartItem;
+import com.backend.cart_service.model.CheckoutRequest;
 import com.backend.cart_service.service.CartService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -37,8 +38,8 @@ public class CartController {
     }
     @PostMapping("{userId}/checkout")
     public ResponseEntity<Map<String,String>>checkOut(@PathVariable String userId,
-                                                      @RequestParam String email){
-        String result=cartService.checkOut(userId,email);
+                                                      @RequestBody CheckoutRequest request){
+        String result=cartService.checkOut(userId,request);
         return ResponseEntity.ok(Map.of("message",result));
     }
 }
