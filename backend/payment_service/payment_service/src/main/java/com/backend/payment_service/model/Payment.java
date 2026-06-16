@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import jakarta.persistence.*;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -16,13 +18,11 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class Payment {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)
-    private String orderId;       // matches OrderEvent.orderId from Kafka
+    private String orderId;
 
     @Column(nullable = false)
     private String userId;
@@ -30,38 +30,48 @@ public class Payment {
     private String userEmail;
 
     @Column(nullable = false)
-    private Double amount;
+    private Double subtotal;
+    private Double discountAmount;
+    private Double codFee;
 
-    private String razorpayOrderId;   // returned by Razorpay API
+    @Column(nullable = false)
+    private Double totalAmount;
 
-    private String razorpayPaymentId; // returned after frontend completes payment
+//    @Enumerated(EnumType.STRING)
+//    private PaymentMethod paymentMethod;
+
+    private String couponCode;
+    private String razorpayOrderId;    // only for UPI_RAZORPAY
+    private String razorpayPaymentId;  // set after frontend confirms
+    private String failureReason;
+    private LocalDate estimatedDelivery;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PaymentStatus status;
 
-    private String failureReason;
-
     @Column(updatable = false)
     private LocalDateTime createdAt;
-
     private LocalDateTime updatedAt;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
+    @PrePersist protected void onCreate() { createdAt = LocalDateTime.now(); updatedAt = LocalDateTime.now(); }
+    @PreUpdate  protected void onUpdate()  { updatedAt = LocalDateTime.now(); }
 
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PaymentMethod paymentMethod;
+
+    public enum PaymentMethod {
+        UPI_RAZORPAY,
+        COD
     }
 
     public enum PaymentStatus {
-        PENDING,    // Razorpay order created, waiting for user to pay
-        SUCCESS,    // Payment verified via /verify endpoint
-        FAILED      // Payment failed or expired
+        PENDING,
+        SUCCESS,
+        FAILED,
+        COD_PENDING,
+        COD_DELIVERED
     }
 }
 

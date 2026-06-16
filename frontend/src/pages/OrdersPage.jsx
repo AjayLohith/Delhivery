@@ -1,10 +1,11 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorAlert } from '@/components/shared/ErrorAlert';
+import { OrderTrackingTimeline } from '@/components/shared/OrderTrackingTimeline';
 import {
   Package,
   ChevronDown,
@@ -14,9 +15,11 @@ import {
   CheckCircle2,
   Clock,
   XCircle,
+  Truck,
 } from 'lucide-react';
 import { usePayments } from '@/hooks/usePayments';
 import { useUser } from '@/context/UserContext';
+import { paymentService } from '@/services/paymentService';
 import { formatCurrency, formatDate, formatShortDate } from '@/utils/formatters';
 import { PAYMENT_STATUS } from '@/constants';
 
@@ -39,14 +42,51 @@ const STATUS_CONFIG = {
     className: 'bg-red-100 text-red-800 border-red-200',
     bar: 'bg-red-500',
   },
+  [PAYMENT_STATUS.COD_PENDING]: {
+    label: 'Pending Delivery',
+    icon: Truck,
+    className: 'bg-blue-100 text-blue-800 border-blue-200',
+    bar: 'bg-blue-500',
+  },
+  [PAYMENT_STATUS.COD_DELIVERED]: {
+    label: 'Delivered',
+    icon: CheckCircle2,
+    className: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    bar: 'bg-emerald-500',
+  },
 };
 
 export function OrdersPage() {
   const { userId } = useUser();
+  const navigate = useNavigate();
   const { payments, loading, error, refetch } = usePayments(userId);
   const [expandedId, setExpandedId] = useState(null);
+  const [trackingData, setTrackingData] = useState({});
+  const [trackingLoading, setTrackingLoading] = useState({});
 
-  const toggle = (id) => setExpandedId((p) => (p === id ? null : id));
+  const toggle = async (id, orderId) => {
+    if (expandedId === id) {
+      setExpandedId(null);
+    } else {
+      setExpandedId(id);
+      // Fetch tracking if not already loaded
+      if (!trackingData[orderId]) {
+        setTrackingLoading((prev) => ({ ...prev, [orderId]: true }));
+        try {
+          const tracking = await paymentService.getTracking(orderId);
+          setTrackingData((prev) => ({
+            ...prev,
+            [orderId]: Array.isArray(tracking) ? tracking : [],
+          }));
+        } catch (err) {
+          console.error('Failed to fetch tracking:', err);
+          setTrackingData((prev) => ({ ...prev, [orderId]: [] }));
+        } finally {
+          setTrackingLoading((prev) => ({ ...prev, [orderId]: false }));
+        }
+      }
+    }
+  };
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">
@@ -92,6 +132,8 @@ export function OrdersPage() {
             const config = STATUS_CONFIG[order.status] ?? STATUS_CONFIG[PAYMENT_STATUS.PENDING];
             const StatusIcon = config.icon;
             const isExpanded = expandedId === order.id;
+            const tracking = trackingData[order.orderId] || [];
+            const isLoadingTracking = trackingLoading[order.orderId];
 
             return (
               <Card key={order.id} className="bg-white border overflow-hidden">
@@ -102,7 +144,7 @@ export function OrdersPage() {
                   {/* Order header */}
                   <div
                     className="flex items-center justify-between cursor-pointer"
-                    onClick={() => toggle(order.id)}
+                    onClick={() => toggle(order.id, order.orderId)}
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="h-10 w-10 rounded-lg bg-muted/30 flex items-center justify-center shrink-0">
@@ -121,7 +163,7 @@ export function OrdersPage() {
                     <div className="flex items-center gap-4 shrink-0 ml-4">
                       <div className="text-right hidden sm:block">
                         <p className="font-heading font-bold text-base text-primary">
-                          {formatCurrency(order.amount)}
+                          {formatCurrency(order.totalAmount || order.amount)}
                         </p>
                       </div>
                       <Badge variant="outline" className={`text-xs font-semibold ${config.className}`}>
@@ -138,17 +180,18 @@ export function OrdersPage() {
 
                   {/* Mobile price */}
                   <p className="font-heading font-bold text-base text-primary sm:hidden mt-2">
-                    {formatCurrency(order.amount)}
+                    {formatCurrency(order.totalAmount || order.amount)}
                   </p>
 
                   {/* Expanded details */}
                   {isExpanded && (
-                    <div className="mt-4 pt-4 border-t space-y-3">
+                    <div className="mt-4 pt-4 border-t space-y-4">
+                      {/* Order details */}
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         <Detail label="Order ID" value={order.orderId || '—'} mono />
                         <Detail label="User" value={order.userId || '—'} />
                         <Detail label="Email" value={order.userEmail || '—'} />
-                        <Detail label="Amount" value={formatCurrency(order.amount)} />
+                        <Detail label="Amount" value={formatCurrency(order.totalAmount || order.amount)} />
                         <Detail label="Status" value={order.status || '—'} />
                         <Detail label="Date" value={formatDate(order.createdAt)} />
                         {order.razorpayOrderId && (
@@ -160,6 +203,27 @@ export function OrdersPage() {
                         {order.failureReason && (
                           <Detail label="Failure Reason" value={order.failureReason} className="text-destructive col-span-2" />
                         )}
+                      </div>
+
+                      {/* Tracking timeline */}
+                      <div className="border-t pt-4">
+                        <h4 className="text-sm font-semibold mb-3">Order Tracking</h4>
+                        <OrderTrackingTimeline
+                          tracking={tracking}
+                          loading={isLoadingTracking}
+                        />
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex gap-2 flex-wrap">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => navigate(`/orders/confirm/${order.orderId}`)}
+                          className="text-xs"
+                        >
+                          View Details
+                        </Button>
                       </div>
                     </div>
                   )}

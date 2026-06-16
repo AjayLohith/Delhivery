@@ -1,8 +1,10 @@
 package com.backend.payment_service.repository;
 
-import com.ecom.payment.model.OrderTracking;
+
+import com.backend.payment_service.model.OrderTracking;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+
 import java.util.List;
 
 @Repository

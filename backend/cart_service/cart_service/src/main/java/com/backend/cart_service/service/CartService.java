@@ -135,7 +135,6 @@ public class CartService {
                 .totalAmount(finalTotal)
                 .paymentMethod(paymentMethod)
                 .couponCode(coupounCode)
-                .paymentMethod(paymentStatus)
                 .estimatedDelivery(estimatedDelivery)
                 .status("PLACED")
                 .build();

@@ -2,12 +2,10 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorAlert } from '@/components/shared/ErrorAlert';
+import { CheckoutModal } from '@/components/cart/CheckoutModal';
 import {
   ShoppingCart,
   Trash2,
@@ -15,12 +13,11 @@ import {
   ArrowRight,
   ShieldCheck,
   Truck,
-  Plus,
-  Minus,
   ShoppingBag,
 } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import { useUser } from '@/context/UserContext';
+import { paymentService } from '@/services/paymentService';
 import { formatCurrency, getProductImage } from '@/utils/formatters';
 import { toast } from 'sonner';
 
@@ -38,8 +35,7 @@ export function CartPage() {
     clearCart,
     checkout,
   } = useCart(userId);
-
-  const [email, setEmail] = useState(userEmail || '');
+  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
 
   const handleRemove = async (productId) => {
@@ -51,15 +47,98 @@ export function CartPage() {
     }
   };
 
-  const handleCheckout = async () => {
-    if (!email.trim()) { toast.error('Please enter your email'); return; }
+  const handleCheckout = async (checkoutRequest) => {
     setCheckingOut(true);
     try {
-      const result = await checkout(email.trim());
-      toast.success(result?.message || 'Order placed!');
-      navigate('/orders');
+      const result = await checkout(checkoutRequest);
+      const orderId = result?.orderId || result?.id;
+
+      if (!orderId) {
+        throw new Error('Order creation failed');
+      }
+
+      setCheckoutModalOpen(false);
+
+      // For ONLINE payment, load Razorpay and open checkout
+      if (checkoutRequest.paymentMethod === 'ONLINE') {
+        try {
+          // Wait for Razorpay script to be available
+          let retries = 10;
+          while (retries > 0 && !window.Razorpay) {
+            await new Promise(resolve => setTimeout(resolve, 200));
+            retries--;
+          }
+
+          if (!window.Razorpay) {
+            throw new Error('Razorpay not available. Continuing with order...');
+          }
+
+          // Fetch order to get razorpayOrderId
+          const orderData = await paymentService.getByOrder(orderId);
+
+          if (!orderData?.razorpayOrderId) {
+            throw new Error('No Razorpay order ID from backend');
+          }
+
+          const discount = checkoutRequest.couponCode === 'WELCOME10' ? subtotal * 0.1 : 0;
+          const finalAmount = subtotal - discount;
+
+          // Open Razorpay with try-catch to handle internal errors
+          try {
+            const razorpayOptions = {
+              key: 'rzp_test_1DP5mmOlF5G0m1',
+              order_id: orderData.razorpayOrderId,
+              amount: Math.round(finalAmount * 100),
+              currency: 'INR',
+              name: 'Delhivery',
+              description: 'Product Purchase',
+              prefill: {
+                email: checkoutRequest.email || userEmail,
+              },
+              theme: {
+                color: '#3b82f6',
+              },
+              handler: async (response) => {
+                try {
+                  // Verify payment
+                  await paymentService.verify(
+                    orderData.razorpayOrderId,
+                    response.razorpay_payment_id
+                  );
+                  toast.success('Payment successful!');
+                  navigate(`/orders/confirm/${orderId}`);
+                } catch (err) {
+                  toast.error('Payment verification failed');
+                  console.error('Verification error:', err);
+                }
+              },
+              modal: {
+                ondismiss: () => {
+                  toast.info('Payment cancelled');
+                },
+              },
+            };
+
+            const razorpay = new window.Razorpay(razorpayOptions);
+            razorpay.open();
+            return;
+          } catch (razorpayErr) {
+            console.error('Razorpay modal error:', razorpayErr);
+            toast.error('Payment gateway error. Continuing with order...');
+          }
+        } catch (err) {
+          console.error('Razorpay setup error:', err);
+          // Don't block checkout if Razorpay fails
+          toast.info('Proceeding with your order...');
+        }
+      }
+
+      // For COD or if Razorpay fails, redirect to confirmation
+      toast.success('Order created successfully!');
+      navigate(`/orders/confirm/${orderId}`);
     } catch (err) {
       toast.error(err.message || 'Checkout failed');
+      console.error('Checkout error:', err);
     } finally {
       setCheckingOut(false);
     }
@@ -205,40 +284,52 @@ export function CartPage() {
 
                 <Separator />
 
-                {/* Email for confirmation */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="checkout-email" className="text-sm">
-                    Email for order confirmation
-                  </Label>
-                  <Input
-                    id="checkout-email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="bg-white"
-                  />
-                </div>
-
                 <Button
                   size="lg"
-                  className="w-full gap-2 text-sm"
-                  onClick={handleCheckout}
-                  disabled={checkingOut || actionLoading || !email.trim()}
+                  className="w-full"
+                  onClick={() => setCheckoutModalOpen(true)}
+                  disabled={checkingOut || items.length === 0}
                 >
-                  {checkingOut && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Place Order <ArrowRight className="h-4 w-4" />
+                  {checkingOut ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      Proceed to Checkout <ArrowRight className="h-4 w-4 ml-2" />
+                    </>
+                  )}
                 </Button>
+              </CardContent>
+            </Card>
 
-                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                  Safe and Secure Payments
+            {/* Trust badges */}
+            <Card className="bg-emerald-50 border-emerald-200">
+              <CardContent className="p-3 space-y-2">
+                <div className="flex items-center gap-2 text-xs">
+                  <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                  <span className="text-emerald-900">Secure checkout</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <Truck className="h-4 w-4 text-emerald-600" />
+                  <span className="text-emerald-900">Fast delivery</span>
                 </div>
               </CardContent>
             </Card>
           </div>
         </div>
       )}
+
+      {/* Checkout Modal */}
+      <CheckoutModal
+        open={checkoutModalOpen}
+        onOpenChange={setCheckoutModalOpen}
+        items={items}
+        userEmail={userEmail}
+        onCheckout={handleCheckout}
+        loading={checkingOut}
+      />
     </div>
   );
 }

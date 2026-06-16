@@ -9,6 +9,8 @@ import { ProductsPage } from '@/pages/ProductsPage';
 import { ProductDetailPage } from '@/pages/ProductDetailPage';
 import { CartPage } from '@/pages/CartPage';
 import { OrdersPage } from '@/pages/OrdersPage';
+import { OrderConfirmationPage } from '@/pages/OrderConfirmationPage';
+import { PaymentsPage } from '@/pages/PaymentsPage';
 import { AdminProductsPage } from '@/pages/AdminProductsPage';
 
 export default function App() {
@@ -26,6 +28,8 @@ export default function App() {
               <Route path="/products/:id" element={<ProductDetailPage />} />
               <Route path="/cart" element={<CartPage />} />
               <Route path="/orders" element={<OrdersPage />} />
+              <Route path="/orders/confirm/:orderId" element={<OrderConfirmationPage />} />
+              <Route path="/payments" element={<PaymentsPage />} />
               <Route path="/admin" element={<AdminProductsPage />} />
             </Route>
           </Routes>

@@ -66,11 +66,11 @@ export function useCart(userId) {
     }
   };
 
-  const checkout = async (email) => {
+  const checkout = async (checkoutRequest) => {
     if (!userId) throw new Error('User ID required');
     setActionLoading(true);
     try {
-      const result = await cartService.checkout(userId, email);
+      const result = await cartService.checkout(userId, checkoutRequest);
       setItems([]);
       return result;
     } finally {

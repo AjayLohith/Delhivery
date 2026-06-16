@@ -1,5 +1,6 @@
 package com.backend.email_service.service;
 
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,6 +24,18 @@ EmailService {
     @Value("${app.frontend-url}")
     private String frontendUrl;
 
+    @PostConstruct
+    public void test() {
+        System.out.println("FROM = " + fromEmail);
+    }
+
+    @PostConstruct
+    public void checkConfig() {
+        log.info("SMTP USER = {}", System.getenv("EMAIL_USER_BREVO"));
+        log.info("FROM EMAIL = {}", fromEmail);
+    }
+
+
     public void sendOrderConfirmation(Map<?, ?> event) {
         try {
             String toEmail = (String) event.get("userEmail");
@@ -32,6 +45,8 @@ EmailService {
 
             Object deliveryObj =  event.get("estimatedDelivery");
             String delivery=deliveryObj==null?"TBD":deliveryObj.toString();
+
+            log.info("FROM EMAIL = {}", fromEmail);
 
             String coupon = (String) event.get("couponCode");
 

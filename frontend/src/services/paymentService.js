@@ -9,4 +9,5 @@ export const paymentService = {
     api
       .post(`${BASE}/verify`, null, { params: { razorpayOrderId, razorpayPaymentId } })
       .then((r) => r.data),
+  getTracking: (orderId) => api.get(`${BASE}/track/${orderId}`).then((r) => r.data),
 };

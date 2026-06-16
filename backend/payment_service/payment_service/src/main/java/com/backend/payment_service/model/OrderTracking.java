@@ -3,10 +3,13 @@ package com.backend.payment_service.model;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+@Entity
 
-// One record per status change — used to show the tracking timeline to user.
-@Entity @Table(name = "order_tracking")
-@Data @NoArgsConstructor @AllArgsConstructor @Builder
+@Table(name = "order_tracking")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class OrderTracking {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
