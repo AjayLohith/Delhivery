@@ -187,4 +187,26 @@ public class PaymentService {
         addTracking(p.getOrderId(), "PAYMENT FAILED", reason);
         return p;
     }
+
+    @Transactional
+    public Payment cancelOrderById(String orderId) {
+        Payment payment=paymentRepo.findByOrderId(orderId)
+                .orElseThrow(()->new RuntimeException("Order didn't found: "+orderId));
+        if(payment.getStatus()== Payment.PaymentStatus.CANCELLED){
+            throw new RuntimeException("Order already cancelled");
+        }
+
+        payment.setStatus(Payment.PaymentStatus.CANCELLED);
+        payment.setUpdatedAt(LocalDateTime.now());
+
+        Payment saved=paymentRepo.save(payment);
+
+        addTracking(
+                orderId,
+                "ORDER CANCELLED",
+                "Order cancelled by customer"
+        );
+        log.info("Order cancelled successfully:{}",orderId);
+        return saved;
+    }
 }

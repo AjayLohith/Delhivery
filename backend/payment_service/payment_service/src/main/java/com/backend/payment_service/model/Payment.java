@@ -74,7 +74,8 @@ public class Payment {
         SUCCESS,
         FAILED,
         COD_PENDING,
-        COD_DELIVERED
+        COD_DELIVERED,
+        CANCELLED
     }
 }
 

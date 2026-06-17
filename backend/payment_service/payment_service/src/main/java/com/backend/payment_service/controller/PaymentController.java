@@ -43,6 +43,11 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.getPaymentByOrderId(orderId));
     }
 
+    @PatchMapping("/order/cancel-order/{orderId}")
+    public ResponseEntity<Payment>cancelOrderById(@PathVariable String orderId){
+        return ResponseEntity.ok(paymentService.cancelOrderById(orderId));
+    }
+
     @GetMapping("/track/{orderId}")
     public ResponseEntity<List<OrderTracking>> track(@PathVariable String orderId) {
         return ResponseEntity.ok(paymentService.getTracking(orderId));
