@@ -71,10 +71,31 @@ public class PaymentService {
                 ? 0.0
                 : ((Number) event.get("totalAmount")).doubleValue();
 
+        String productNames = "";
+        Object itemsObj = event.get("items");
+        if (itemsObj instanceof List) {
+            List<?> itemsList = (List<?>) itemsObj;
+            StringBuilder sb = new StringBuilder();
+            for (Object item : itemsList) {
+                if (item instanceof Map) {
+                    Map<?, ?> itemMap = (Map<?, ?>) item;
+                    String name = (String) itemMap.get("productName");
+                    if (name != null) {
+                        sb.append(name).append(", ");
+                    }
+                }
+            }
+            if (sb.length() > 0) {
+                sb.setLength(sb.length() - 2);
+            }
+            productNames = sb.toString();
+        }
+
         Payment payment = Payment.builder()
                 .orderId(orderId).userId(userId).userEmail(userEmail)
                 .subtotal(subtotal).discountAmount(discount).codFee(codFee)
                 .totalAmount(total).couponCode(couponCode)
+                .productNames(productNames)
                 .estimatedDelivery(estimatedDelivery)
                 .paymentMethod(method)
                 .build();

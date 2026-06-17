@@ -14,7 +14,7 @@ export function CartItemRow({ item, onRemove, removing }) {
         <div className="flex items-center gap-3">
           <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg border bg-muted/30">
             <img
-              src={getProductImage({ id: item.productId, imageUrl: null })}
+              src={getProductImage({ id: item.productId, name: item.productName, imageUrl: null })}
               alt={item.productName}
               className="h-full w-full object-cover"
             />

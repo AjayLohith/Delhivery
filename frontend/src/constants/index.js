@@ -30,6 +30,6 @@ export const STORAGE_KEYS = {
 
 // Razorpay configuration
 export const RAZORPAY_CONFIG = {
-  KEY_ID: 'rzp_test_1DP5mmOlF5G0m1', // Test key - will work with test cards
+  KEY_ID: 'rzp_test_T2Npf8ixdFEHQd', // Test key - will work with test cards
   CURRENCY: 'INR',
 };

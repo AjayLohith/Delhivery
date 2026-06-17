@@ -42,6 +42,18 @@ EmailService {
             String userId = (String) event.get("userId");
             String orderId = (String) event.get("orderId");
             String method = (String) event.get("paymentMethod");
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> things =
+                    (List<Map<String, Object>>) event.get("items");
+
+            String productNames = "Order";
+
+            if (things != null && !things.isEmpty()) {
+                productNames = things.stream()
+                        .map(item -> (String) item.get("productName"))
+                        .reduce((a, b) -> a + ", " + b)
+                        .orElse("Order");
+            }
 
             Object deliveryObj =  event.get("estimatedDelivery");
             String delivery=deliveryObj==null?"TBD":deliveryObj.toString();
@@ -64,8 +76,6 @@ EmailService {
                             ? 0.0
                             : ((Number) event.get("codFee"))
                             .doubleValue();
-//            double discount = ((Number) event.get("discountAmount")).doubleValue();
-//            double codFee = ((Number) event.get("codFee")).doubleValue();
             double total = ((Number) event.get("totalAmount")).doubleValue();
 
 
@@ -76,7 +86,9 @@ EmailService {
             SimpleMailMessage msg = new SimpleMailMessage();
             msg.setFrom(fromEmail);
             msg.setTo(toEmail);
-            msg.setSubject("Order Confirmed - " + orderId + " | Rs." + total);
+            msg.setSubject("Order Confirmed - "+ productNames+
+                    " Order id- " + orderId +
+                    " | Rs." + total);
 
             StringBuilder body = new StringBuilder();
             body.append("Hello ").append(userId).append(",\n\n");

@@ -57,6 +57,7 @@ export function useRazorpayPayment() {
       };
 
       try {
+        console.debug('Opening Razorpay with options:', options);
         const razorpay = new window.Razorpay(options);
         razorpay.open();
       } catch (err) {

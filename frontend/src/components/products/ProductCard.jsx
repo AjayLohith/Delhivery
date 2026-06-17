@@ -55,7 +55,7 @@ export function ProductCard({ product }) {
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             loading="lazy"
             onError={(e) => {
-              e.target.src = `https://picsum.photos/seed/prod${product.id}/300/300`;
+              e.target.src = `https://loremflickr.com/300/300/product?lock=${product.id}`;
             }}
           />
           {product.category && (

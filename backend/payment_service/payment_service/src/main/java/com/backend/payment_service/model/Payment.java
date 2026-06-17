@@ -37,6 +37,9 @@ public class Payment {
     @Column(nullable = false)
     private Double totalAmount;
 
+    @Column(length = 1000)
+    private String productNames;
+
 //    @Enumerated(EnumType.STRING)
 //    private PaymentMethod paymentMethod;
 

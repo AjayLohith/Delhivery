@@ -23,6 +23,15 @@ export function useProducts(filter = {}) {
       } else {
         data = await productService.getAll();
       }
+
+      // Apply strict client-side filtering fallback to support multiple filters simultaneously
+      if (filter.category && filter.category !== 'all') {
+        data = data.filter(p => p.category === filter.category);
+      }
+      if (filter.inStockOnly) {
+        data = data.filter(p => p.stock > 0);
+      }
+
       setProducts(data);
     } catch (err) {
       setError(err.message);

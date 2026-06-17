@@ -16,6 +16,7 @@ public class EmailEventConsumer {
     private final EmailService emailService;
     private final ObjectMapper objectMapper;
 
+
     @KafkaListener(topics = "order-placed-topic",groupId = "email-group")
     public void handleOrderPlaced(String message){
         try{

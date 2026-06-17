@@ -28,9 +28,12 @@ export function ProductsPage() {
 
   const { products, loading, error, refetch } = useProducts(filter);
 
-  // Client-side price + stock filter
+  // Client-side filtering
   const filtered = useMemo(() => {
     let p = products;
+    if (category && category !== 'all') {
+      p = p.filter((x) => x.category === category);
+    }
     if (priceMax && !isNaN(Number(priceMax))) {
       p = p.filter((x) => x.price <= Number(priceMax));
     }
@@ -38,7 +41,7 @@ export function ProductsPage() {
       p = p.filter((x) => x.stock > 0);
     }
     return p;
-  }, [products, priceMax, inStockOnly]);
+  }, [products, category, priceMax, inStockOnly]);
 
   const handleCategoryClick = (cat) => {
     setCategory(cat);

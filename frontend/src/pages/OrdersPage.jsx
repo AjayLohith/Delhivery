@@ -151,11 +151,11 @@ export function OrdersPage() {
                         <Package className="h-5 w-5 text-muted-foreground" />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-semibold text-sm font-mono truncate">
-                          {order.orderId || `Order #${order.id}`}
+                        <p className="font-semibold text-sm truncate">
+                          {order.productNames || 'Products'}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Placed on {formatShortDate(order.createdAt)}
+                          {order.orderId || `Order #${order.id}`} • {formatShortDate(order.createdAt)}
                         </p>
                       </div>
                     </div>

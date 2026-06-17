@@ -51,7 +51,11 @@ export function getProductImage(product) {
   if (product?.imageUrl && product.imageUrl.startsWith('http')) {
     return product.imageUrl;
   }
-  // Use picsum with a deterministic seed from the product id
+  // Use loremflickr to get an image based on the product name
   const seed = product?.id ?? 1;
-  return `https://picsum.photos/seed/product-${seed}/400/300`;
+  let keyword = 'product';
+  if (product?.name) {
+    keyword = encodeURIComponent(product.name.split(' ')[0].toLowerCase());
+  }
+  return `https://loremflickr.com/400/300/${keyword}?lock=${seed}`;
 }

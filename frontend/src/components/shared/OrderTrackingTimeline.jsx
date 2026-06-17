@@ -54,48 +54,43 @@ export function OrderTrackingTimeline({ tracking = [], loading = false }) {
   }
 
   return (
-    <div className="space-y-0">
+    <div className="space-y-6 ml-4">
       {tracking.map((event, index) => {
         const IconComponent = STATUS_ICONS[event.status] || Clock;
-        const colorClass = STATUS_COLORS[event.status] || 'bg-gray-100 text-gray-800 border-gray-200';
         const isLast = index === tracking.length - 1;
+        const isCompleted = true; // Assuming history means it's completed
 
         return (
-          <div key={event.id || index} className="relative">
+          <div key={event.id || index} className="relative pl-6">
             {/* Timeline connector line */}
             {!isLast && (
-              <div className="absolute left-6 top-14 w-0.5 h-12 bg-border" />
+              <div className="absolute left-[0.55rem] top-7 w-0.5 h-[calc(100%+1.5rem)] bg-border" />
             )}
 
-            <Card className="border-l-4 border-l-primary">
-              <CardContent className="flex gap-4 p-4">
-                {/* Icon circle */}
-                <div className="flex shrink-0">
-                  <div className={`flex h-12 w-12 items-center justify-center rounded-full ${colorClass} border`}>
-                    <IconComponent className="h-5 w-5" />
-                  </div>
-                </div>
+            {/* Timeline dot */}
+            <div className={`absolute left-0 top-1.5 h-[1.3rem] w-[1.3rem] rounded-full border-2 border-white flex items-center justify-center
+              ${isCompleted ? 'bg-primary' : 'bg-muted'}
+            `}>
+               {/* inner dot */}
+               <div className="h-1.5 w-1.5 rounded-full bg-white" />
+            </div>
 
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2 flex-wrap">
-                    <div>
-                      <Badge variant="outline" className={`text-xs font-semibold ${colorClass}`}>
-                        {event.status}
-                      </Badge>
-                      {event.description && (
-                        <p className="text-sm text-foreground mt-1 leading-relaxed">
-                          {event.description}
-                        </p>
-                      )}
-                    </div>
-                    <span className="text-xs text-muted-foreground shrink-0">
-                      {formatDate(event.timestamp)}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Content */}
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-1 sm:gap-4">
+              <div>
+                <p className="text-sm font-semibold text-foreground">
+                  {event.status}
+                </p>
+                {event.description && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {event.description}
+                  </p>
+                )}
+              </div>
+              <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                {formatDate(event.timestamp)}
+              </span>
+            </div>
           </div>
         );
       })}

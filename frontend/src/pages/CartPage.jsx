@@ -51,10 +51,17 @@ export function CartPage() {
     setCheckingOut(true);
     try {
       const result = await checkout(checkoutRequest);
-      const orderId = result?.orderId || result?.id;
+      
+      // Backend returns orderId in message string: "Order ID: ORD-XXXXXXXX"
+      let orderId = result?.orderId || result?.id;
+      if (!orderId && result?.message) {
+        // Extract orderId from message like "Order ID: ORD-12345678"
+        const match = result.message.match(/Order ID: (ORD-[A-Z0-9]+)/);
+        orderId = match ? match[1] : null;
+      }
 
       if (!orderId) {
-        throw new Error('Order creation failed');
+        throw new Error('Order creation failed - no order ID');
       }
 
       setCheckoutModalOpen(false);
@@ -63,30 +70,49 @@ export function CartPage() {
       if (checkoutRequest.paymentMethod === 'ONLINE') {
         try {
           // Wait for Razorpay script to be available
-          let retries = 10;
-          while (retries > 0 && !window.Razorpay) {
+          let razorpayRetries = 10;
+          while (razorpayRetries > 0 && !window.Razorpay) {
             await new Promise(resolve => setTimeout(resolve, 200));
-            retries--;
+            razorpayRetries--;
           }
 
           if (!window.Razorpay) {
             throw new Error('Razorpay not available. Continuing with order...');
           }
 
-          // Fetch order to get razorpayOrderId
-          const orderData = await paymentService.getByOrder(orderId);
-
-          if (!orderData?.razorpayOrderId) {
-            throw new Error('No Razorpay order ID from backend');
+          // Fetch order to get razorpayOrderId (with retry - Kafka might not have processed yet)
+          let orderData = null;
+          let dataRetries = 15; // Retry up to 3 seconds (15 * 200ms)
+          while (dataRetries > 0 && !orderData?.razorpayOrderId) {
+            try {
+              orderData = await paymentService.getByOrder(orderId);
+              if (orderData?.razorpayOrderId) {
+                console.log('✅ Got Razorpay Order ID:', orderData.razorpayOrderId);
+                break;
+              }
+            } catch (err) {
+              console.log(`⏳ Waiting for payment record... (${15 - dataRetries + 1}/15)`);
+            }
+            await new Promise(resolve => setTimeout(resolve, 200));
+            dataRetries--;
           }
 
-          const discount = checkoutRequest.couponCode === 'WELCOME10' ? subtotal * 0.1 : 0;
-          const finalAmount = subtotal - discount;
+          if (!orderData?.razorpayOrderId) {
+            throw new Error('Payment service failed. Try again in a moment.');
+          }
+
+          const finalAmount = orderData.totalAmount;
+
+          console.log('💳 Opening Razorpay with:', {
+            razorpayOrderId: orderData.razorpayOrderId,
+            amount: Math.round(finalAmount * 100),
+            email: checkoutRequest.email || userEmail,
+          });
 
           // Open Razorpay with try-catch to handle internal errors
           try {
             const razorpayOptions = {
-              key: 'rzp_test_1DP5mmOlF5G0m1',
+              key: 'rzp_test_T2Npf8ixdFEHQd',
               order_id: orderData.razorpayOrderId,
               amount: Math.round(finalAmount * 100),
               currency: 'INR',
@@ -98,7 +124,15 @@ export function CartPage() {
               theme: {
                 color: '#3b82f6',
               },
+              retry: {
+                enabled: true,
+                max_count: 3,
+              },
               handler: async (response) => {
+                console.log('✅ Payment handler received:', {
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_order_id: response.razorpay_order_id,
+                });
                 try {
                   // Verify payment
                   await paymentService.verify(
@@ -114,16 +148,20 @@ export function CartPage() {
               },
               modal: {
                 ondismiss: () => {
+                  console.log('❌ Payment modal dismissed');
                   toast.info('Payment cancelled');
                 },
               },
             };
 
+            console.log('🚀 Creating Razorpay instance...');
             const razorpay = new window.Razorpay(razorpayOptions);
+            console.log('🎯 Opening Razorpay modal...');
             razorpay.open();
+            console.log('✨ Razorpay modal opened successfully');
             return;
           } catch (razorpayErr) {
-            console.error('Razorpay modal error:', razorpayErr);
+            console.error('❌ Razorpay modal error:', razorpayErr);
             toast.error('Payment gateway error. Continuing with order...');
           }
         } catch (err) {
@@ -196,10 +234,10 @@ export function CartPage() {
                   {/* Image */}
                   <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg border bg-muted/20">
                     <img
-                      src={getProductImage({ id: item.productId })}
+                      src={getProductImage({ id: item.productId, name: item.productName })}
                       alt={item.productName}
                       className="h-full w-full object-cover"
-                      onError={(e) => { e.target.src = `https://picsum.photos/seed/c${item.productId}/80/80`; }}
+                      onError={(e) => { e.target.src = `https://loremflickr.com/80/80/product?lock=${item.productId}`; }}
                     />
                   </div>
 
